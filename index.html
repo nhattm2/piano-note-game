@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đoán Nốt Nhạc</title>
+<meta name="description" content="Game vui giúp người học piano luyện đọc và đoán tên nốt nhạc trên khuông khóa Sol, khóa Fa.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎹</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Noto+Music&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fff4e6;
+    --blob1: #ffe0ec;
+    --blob2: #e3f0ff;
+    --card: #ffffff;
+    --ink: #2b2340;
+    --muted: #7a6f8f;
+    --line: #e9e3f3;
+    --primary: #ff5c93;
+    --primary-ink: #ffffff;
+    --accent: #7c5cff;
+    --good: #22c55e;
+    --bad: #ef4444;
+    --staff: #2b2340;
+    --seg-bg: #f3eefb;
+    --shadow: 0 6px 0 rgba(43, 35, 64, .12), 0 12px 28px rgba(43, 35, 64, .08);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17131f;
+      --blob1: #2a1b2f;
+      --blob2: #1a2238;
+      --card: #251f33;
+      --ink: #f4effd;
+      --muted: #b4a9ca;
+      --line: #3a3150;
+      --staff: #f4effd;
+      --seg-bg: #1d1829;
+      --shadow: 0 6px 0 rgba(0, 0, 0, .35), 0 12px 28px rgba(0, 0, 0, .3);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17131f;
+    --blob1: #2a1b2f;
+    --blob2: #1a2238;
+    --card: #251f33;
+    --ink: #f4effd;
+    --muted: #b4a9ca;
+    --line: #3a3150;
+    --staff: #f4effd;
+    --seg-bg: #1d1829;
+    --shadow: 0 6px 0 rgba(0, 0, 0, .35), 0 12px 28px rgba(0, 0, 0, .3);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(circle at 8% 12%, var(--blob1) 0 140px, transparent 141px),
+      radial-gradient(circle at 92% 88%, var(--blob2) 0 180px, transparent 181px);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: 'Baloo 2', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .music { font-family: 'Noto Music', 'Segoe UI Symbol', 'Apple Symbols', serif; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px 16px 40px; }
+  .card { background: var(--card); border-radius: 24px; box-shadow: var(--shadow); padding: 18px; }
+  .hidden { display: none !important; }
+  button { font: inherit; color: inherit; }
+
+  /* ---------- Menu ---------- */
+  .logo { text-align: center; margin: 12px 0 18px; }
+  .logo h1 { margin: 0; font-size: clamp(34px, 8vw, 54px); line-height: 1; font-weight: 800; letter-spacing: -.5px; }
+  .logo h1 span { display: inline-block; animation: bob 2.4s ease-in-out infinite; }
+  .logo h1 span:nth-child(2) { animation-delay: .15s; }
+  .logo h1 span:nth-child(3) { animation-delay: .3s; }
+  .logo p { margin: 6px 0 0; color: var(--muted); font-size: 18px; }
+  .notes-deco { font-size: 30px; letter-spacing: 8px; }
+  .notes-deco b { font-weight: 400; display: inline-block; animation: bob 2s ease-in-out infinite; }
+  .notes-deco b:nth-child(2) { animation-delay: .3s; color: var(--primary); }
+  .notes-deco b:nth-child(3) { animation-delay: .6s; color: var(--accent); }
+
+  .group { margin-bottom: 14px; }
+  .group-label { font-weight: 700; font-size: 15px; color: var(--muted); margin: 0 0 6px 4px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; background: var(--seg-bg); padding: 6px; border-radius: 16px; }
+  .seg button {
+    flex: 1 1 auto; min-width: 80px; border: 0; background: transparent; padding: 8px 10px;
+    border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; color: var(--muted);
+    transition: background .15s, color .15s, transform .1s;
+  }
+  .seg button:hover { color: var(--ink); }
+  .seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 3px 0 rgba(43,35,64,.12); }
+  .mode-desc { color: var(--muted); font-size: 15px; margin: 6px 4px 0; min-height: 1.4em; }
+
+  .big-btn {
+    display: block; width: 100%; border: 0; border-radius: 20px; padding: 14px 20px;
+    background: var(--primary); color: var(--primary-ink); font-weight: 800; font-size: 24px;
+    box-shadow: 0 6px 0 #c93a6c; cursor: pointer; transition: transform .08s, box-shadow .08s;
+  }
+  .big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #c93a6c; }
+  .big-btn.alt { background: var(--accent); box-shadow: 0 6px 0 #5639c9; }
+  .big-btn.alt:active { box-shadow: 0 2px 0 #5639c9; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .bests { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; justify-content: center; color: var(--muted); font-size: 15px; }
+  .bests span { background: var(--seg-bg); padding: 4px 12px; border-radius: 999px; }
+  .footer-note { text-align: center; color: var(--muted); font-size: 14px; margin-top: 16px; }
+  kbd { font-family: inherit; background: var(--seg-bg); border-radius: 6px; padding: 0 6px; border: 1px solid var(--line); }
+
+  /* ---------- HUD ---------- */
+  .hud { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .pill {
+    background: var(--card); border-radius: 999px; padding: 4px 14px; font-weight: 800; font-size: 18px;
+    box-shadow: 0 3px 0 rgba(43,35,64,.1); display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .pill small { font-weight: 600; color: var(--muted); font-size: 13px; }
+  .hud .spacer { flex: 1; }
+  .icon-btn {
+    border: 0; background: var(--card); border-radius: 50%; width: 40px; height: 40px; font-size: 18px;
+    cursor: pointer; box-shadow: 0 3px 0 rgba(43,35,64,.1);
+  }
+  .timebar { height: 10px; border-radius: 999px; background: var(--seg-bg); overflow: hidden; margin: -4px 0 12px; }
+  .timebar div { height: 100%; width: 100%; background: linear-gradient(90deg, var(--good), #a3e635); border-radius: 999px; transition: width .1s linear; }
+  .timebar.low div { background: linear-gradient(90deg, var(--bad), #fb923c); }
+  .pill.bump { animation: pop .35s; }
+
+  /* ---------- Stage ---------- */
+  .stage { position: relative; padding: 12px 12px 6px; }
+  .mascot { display: flex; align-items: center; gap: 10px; min-height: 52px; }
+  .face { font-size: 40px; line-height: 1; transition: transform .2s; }
+  .face.happy { animation: pop .45s; }
+  .face.sad { animation: shake .45s; }
+  .bubble {
+    position: relative; background: var(--seg-bg); padding: 6px 14px; border-radius: 16px;
+    font-weight: 700; font-size: 18px;
+  }
+  .bubble::before {
+    content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
+    border: 8px solid transparent; border-right-color: var(--seg-bg); border-left: 0;
+  }
+  #staff { display: block; width: 100%; height: auto; max-height: 300px; }
+  #staff .staff-line { stroke: var(--staff); stroke-width: 1.6; }
+  #staff .clef { fill: var(--staff); }
+  #noteG.enter { animation: slideIn .38s cubic-bezier(.2, .9, .3, 1.25); }
+  .hint { text-align: center; color: var(--muted); font-size: 16px; min-height: 1.5em; margin: 0 0 4px; }
+  .hint b { color: var(--ink); }
+  .floater {
+    position: absolute; left: 62%; top: 38%; font-weight: 800; font-size: 30px; pointer-events: none;
+    animation: floatUp .9s ease-out forwards; color: var(--good); text-shadow: 0 2px 0 rgba(0,0,0,.12);
+  }
+  .floater.minus { color: var(--bad); }
+  .shake { animation: shake .45s; }
+
+  /* ---------- Answer buttons ---------- */
+  .answers { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 14px; }
+  .ans {
+    border: 0; border-radius: 16px; padding: 10px 0 8px; font-weight: 800; line-height: 1.05;
+    font-size: clamp(15px, 4.4vw, 24px); color: var(--t); background: var(--c);
+    box-shadow: 0 5px 0 rgba(0, 0, 0, .25); cursor: pointer; transition: transform .08s, box-shadow .08s, filter .2s;
+  }
+  .ans small { display: block; font-size: .6em; opacity: .85; font-weight: 700; margin-top: 2px; }
+  .ans:hover { filter: brightness(1.06); }
+  .ans:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .25); }
+  .ans.good { animation: pop .4s; box-shadow: 0 0 0 4px var(--good), 0 5px 0 rgba(0,0,0,.25); }
+  .ans.bad { animation: shake .4s; filter: grayscale(.8) brightness(.8); }
+  .ans.reveal { animation: pulse .5s 3; box-shadow: 0 0 0 4px var(--good), 0 5px 0 rgba(0,0,0,.25); }
+
+  /* ---------- Piano ---------- */
+  .piano-scroll { overflow-x: auto; margin-top: 16px; padding: 4px 0 8px; scrollbar-width: thin; }
+  .piano { position: relative; display: flex; width: max-content; margin: 0 auto; }
+  .wk {
+    width: 34px; height: 124px; background: #fff; border: 1px solid #cbc3dc; border-top: 0;
+    border-radius: 0 0 8px 8px; position: relative; cursor: pointer; display: flex; align-items: flex-end;
+    justify-content: center; padding-bottom: 6px; font-size: 11px; font-weight: 700; color: #8a80a0;
+    transition: background .15s;
+  }
+  .wk:active { background: #efe9fa; }
+  .wk.mid::before {
+    content: ''; position: absolute; top: 88px; width: 8px; height: 8px; border-radius: 50%; background: var(--primary);
+  }
+  .bk {
+    position: absolute; top: 0; width: 22px; height: 76px; background: #2b2340; border-radius: 0 0 6px 6px;
+    z-index: 2; cursor: pointer; box-shadow: inset 0 -4px 0 #4a3f66;
+  }
+  .bk:active { background: #4a3f66; }
+  .wk.hl-good { background: var(--good); color: #fff; }
+  .wk.hl-bad { background: #fca5a5; color: #7f1d1d; }
+  .wk.hl-good, .wk.hl-bad { animation: pressKey .3s; }
+  .piano-cap { text-align: center; color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  /* ---------- End screen ---------- */
+  .end-title { text-align: center; font-size: clamp(28px, 7vw, 40px); font-weight: 800; margin: 4px 0 2px; }
+  .end-sub { text-align: center; color: var(--muted); margin: 0 0 14px; font-size: 17px; }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+  .stat { background: var(--seg-bg); border-radius: 18px; padding: 10px; text-align: center; }
+  .stat b { display: block; font-size: 30px; line-height: 1.1; }
+  .stat span { color: var(--muted); font-size: 14px; font-weight: 600; }
+  .record { text-align: center; font-weight: 800; font-size: 22px; color: var(--primary); margin: 0 0 10px; animation: pop .6s; }
+  .missed { margin: 0 0 16px; }
+  .missed h3 { margin: 0 0 6px; font-size: 17px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { padding: 3px 12px; border-radius: 999px; font-weight: 700; color: var(--t); background: var(--c); font-size: 15px; }
+
+  .toast {
+    position: fixed; left: 50%; top: 22%; transform: translate(-50%, -50%); z-index: 20;
+    background: var(--accent); color: #fff; font-weight: 800; font-size: 30px; padding: 10px 28px;
+    border-radius: 20px; box-shadow: 0 8px 0 #5639c9; pointer-events: none; animation: toastIn 1.6s ease forwards;
+    white-space: nowrap;
+  }
+  #fx { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+  @keyframes slideIn { from { transform: translateX(90px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-60px); opacity: 0; } }
+  @keyframes pressKey { 0% { transform: translateY(0); } 50% { transform: translateY(3px); } 100% { transform: translateY(0); } }
+  @keyframes toastIn {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(.5); }
+    15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    25% { transform: translate(-50%, -50%) scale(1); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -80%) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  }
+  @media (max-width: 480px) {
+    .answers { gap: 5px; }
+    .ans { border-radius: 12px; padding: 8px 0 6px; }
+    .hud { gap: 5px; flex-wrap: nowrap; }
+    .pill { font-size: 15px; padding: 3px 8px; gap: 3px; }
+    .pill small { display: none; }
+    .icon-btn { width: 34px; height: 34px; font-size: 15px; flex: none; }
+    .row .big-btn { font-size: 19px; padding: 12px 10px; white-space: nowrap; }
+    .face { font-size: 32px; }
+    .bubble { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<main class="wrap">
+  <!-- ===== MENU ===== -->
+  <section id="menu">
+    <div class="logo">
+      <div class="notes-deco music"><b>♪</b><b>♫</b><b>♬</b></div>
+      <h1><span>Đoán</span> <span>Nốt</span> <span>Nhạc</span> 🎹</h1>
+      <p>Nhìn nốt trên khuông, bấm đúng tên. Bạn đọc nhanh tới đâu?</p>
+    </div>
+    <div class="card">
+      <div class="group">
+        <p class="group-label">Chế độ chơi</p>
+        <div class="seg" data-key="mode"></div>
+        <p class="mode-desc" id="modeDesc"></p>
+      </div>
+      <div class="group">
+        <p class="group-label">Khóa nhạc</p>
+        <div class="seg" data-key="clef"></div>
+      </div>
+      <div class="group">
+        <p class="group-label">Độ khó</p>
+        <div class="seg" data-key="diff"></div>
+      </div>
+      <div class="group">
+        <p class="group-label">Cách gọi tên nốt</p>
+        <div class="seg" data-key="naming"></div>
+      </div>
+      <button class="big-btn" id="startBtn">Bắt đầu chơi ▶</button>
+      <div class="bests" id="bests"></div>
+    </div>
+    <p class="footer-note">Mẹo: dùng bàn phím máy tính, phím <kbd>C</kbd>…<kbd>B</kbd> hoặc <kbd>1</kbd>…<kbd>7</kbd> (Đô → Si) để trả lời nhanh hơn.</p>
+  </section>
+
+  <!-- ===== GAME ===== -->
+  <section id="game" class="hidden">
+    <div class="hud">
+      <div class="pill" id="hudScore">⭐ 0</div>
+      <div class="pill" id="hudStreak">🔥 0</div>
+      <div class="pill" id="hudExtra"></div>
+      <div class="pill" id="hudLevel"><small>Cấp</small> 1</div>
+      <div class="spacer"></div>
+      <button class="icon-btn" id="soundBtn" aria-label="Bật/tắt âm thanh">🔊</button>
+      <button class="icon-btn" id="quitBtn" aria-label="Kết thúc lượt chơi">✖</button>
+    </div>
+    <div class="timebar" id="timebar"><div></div></div>
+
+    <div class="card stage" id="stage">
+      <div class="mascot">
+        <div class="face" id="face">🐱</div>
+        <div class="bubble" id="msg">Nốt này là gì nhỉ?</div>
+      </div>
+      <svg id="staff" viewBox="0 0 360 212" role="img" aria-label="Một nốt nhạc trên khuông nhạc">
+        <g id="staffG"></g>
+        <g id="noteG"></g>
+      </svg>
+      <p class="hint" id="hint"></p>
+    </div>
+
+    <div class="answers" id="answers"></div>
+
+    <div class="piano-scroll" id="pianoScroll">
+      <div class="piano" id="piano"></div>
+    </div>
+    <p class="piano-cap">Chấm hồng = Đô giữa (C4). Bấm phím trắng cũng được tính là trả lời.</p>
+  </section>
+
+  <!-- ===== END ===== -->
+  <section id="end" class="hidden">
+    <div class="card">
+      <div class="end-title" id="endTitle"></div>
+      <p class="end-sub" id="endSub"></p>
+      <p class="record hidden" id="record">🏆 Kỷ lục mới!</p>
+      <div class="stats">
+        <div class="stat"><b id="stScore">0</b><span>Điểm</span></div>
+        <div class="stat"><b id="stAcc">0%</b><span>Độ chính xác</span></div>
+        <div class="stat"><b id="stCorrect">0</b><span>Nốt đúng</span></div>
+        <div class="stat"><b id="stStreak">0</b><span>Chuỗi dài nhất</span></div>
+      </div>
+      <div class="missed hidden" id="missedBox">
+        <h3>Nốt bạn hay nhầm, ôn lại nhé 👇</h3>
+        <div class="chips" id="missedChips"></div>
+      </div>
+      <div class="row">
+        <button class="big-btn" id="againBtn">Chơi lại 🔁</button>
+        <button class="big-btn alt" id="menuBtn">Menu</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } },
+  };
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- Music theory ----------
+  const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+  const SOLF = ['Đô', 'Rê', 'Mi', 'Fa', 'Sol', 'La', 'Si'];
+  const SEMI = [0, 2, 4, 5, 7, 9, 11];
+  const COLORS = ['#ff595e', '#ff924c', '#ffca3a', '#8ac926', '#1fb5a6', '#1982c4', '#8e5cc4'];
+  const TEXT_ON = ['#fff', '#fff', '#3a2a00', '#1f3300', '#fff', '#fff', '#fff'];
+  // A "step" is a diatonic position: octave * 7 + letter index (C4 = 28).
+  const S = (li, oct) => oct * 7 + li;
+  const liOf = (s) => ((s % 7) + 7) % 7;
+  const octOf = (s) => Math.floor(s / 7);
+  const midiOf = (s) => 12 * (octOf(s) + 1) + SEMI[liOf(s)];
+
+  const CLEF = {
+    treble: {
+      bottom: S(2, 4), glyph: '\u{1D11E}', name: 'khóa Sol',
+      ranges: { easy: [S(2, 4), S(3, 5)], medium: [S(0, 4), S(5, 5)], hard: [S(5, 3), S(2, 6)] },
+      lines: 'Mi – Sol – Si – Rê – Fa', spaces: 'Fa – La – Đô – Mi',
+    },
+    bass: {
+      bottom: S(4, 2), glyph: '\u{1D122}', name: 'khóa Fa',
+      ranges: { easy: [S(4, 2), S(5, 3)], medium: [S(2, 2), S(0, 4)], hard: [S(0, 2), S(4, 4)] },
+      lines: 'Sol – Si – Rê – Fa – La', spaces: 'La – Đô – Mi – Sol',
+    },
+  };
+
+  // ---------- Settings & menu ----------
+  const OPTIONS = {
+    mode: [['timed', '⏱️ 60 giây'], ['survival', '❤️ Sinh tồn'], ['practice', '🧘 Luyện tập']],
+    clef: [['treble', '<span class="music">\u{1D11E}</span> Khóa Sol'], ['bass', '<span class="music">\u{1D122}</span> Khóa Fa'], ['both', 'Cả hai']],
+    diff: [['auto', '📈 Tăng dần'], ['easy', 'Dễ'], ['medium', 'Vừa'], ['hard', 'Khó']],
+    naming: [['solfege', 'Đô Rê Mi'], ['letter', 'C D E']],
+  };
+  const MODE_DESC = {
+    timed: 'Trả lời càng nhiều càng tốt trong 60 giây. Trả lời sai bị trừ 3 giây!',
+    survival: 'Bạn có 3 trái tim. Sai 3 lần là thua, xem bạn trụ được bao lâu!',
+    practice: 'Không tính giờ, không mất mạng. Cứ thong thả mà học.',
+  };
+  const MODE_NAME = { timed: '60 giây', survival: 'Sinh tồn', practice: 'Luyện tập' };
+  const settings = Object.assign(
+    { mode: 'timed', clef: 'treble', diff: 'auto', naming: 'solfege', sound: true },
+    store.get('pn.settings', {})
+  );
+  const saveSettings = () => store.set('pn.settings', settings);
+
+  document.querySelectorAll('.seg').forEach((seg) => {
+    const key = seg.dataset.key;
+    seg.innerHTML = OPTIONS[key].map(([v, label]) => `<button type="button" data-v="${v}">${label}</button>`).join('');
+    seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      settings[key] = b.dataset.v;
+      saveSettings();
+      syncMenu();
+    });
+  });
+
+  function syncMenu() {
+    document.querySelectorAll('.seg').forEach((seg) => {
+      seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === settings[seg.dataset.key])));
+    });
+    $('modeDesc').textContent = MODE_DESC[settings.mode];
+    const parts = ['timed', 'survival'].map((m) => `${MODE_NAME[m]}: <b>${store.get('pn.best.' + m, 0)}</b> điểm`);
+    $('bests').innerHTML = parts.map((p) => `<span>🏆 ${p}</span>`).join('');
+    $('soundBtn').textContent = settings.sound ? '🔊' : '🔇';
+  }
+
+  const nm = (li) => (settings.naming === 'solfege' ? SOLF[li] : LETTERS[li]);
+  const alt = (li) => (settings.naming === 'solfege' ? LETTERS[li] : SOLF[li]);
+
+  // ---------- Audio ----------
+  let actx = null;
+  function ac() {
+    if (!actx) {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return null;
+      actx = new C();
+    }
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+  function tone(midi, dur = 1.3, vol = 0.32, delay = 0) {
+    if (!settings.sound) return;
+    const c = ac();
+    if (!c) return;
+    const t = c.currentTime + delay;
+    const f = 440 * Math.pow(2, (midi - 69) / 12);
+    const out = c.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+    out.gain.exponentialRampToValueAtTime(vol * 0.35, t + 0.25);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(Math.min(9000, f * 8), t);
+    lp.frequency.exponentialRampToValueAtTime(Math.min(4000, f * 3), t + dur);
+    out.connect(lp).connect(c.destination);
+    [[1, 1, 'triangle'], [2, 0.4, 'sine'], [3, 0.18, 'sine'], [4, 0.08, 'sine']].forEach(([h, g, type]) => {
+      const o = c.createOscillator();
+      o.type = type;
+      o.frequency.value = f * h;
+      o.detune.value = (Math.random() - 0.5) * 4;
+      const gg = c.createGain();
+      gg.gain.value = g;
+      o.connect(gg).connect(out);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    });
+  }
+  function buzz() {
+    if (!settings.sound) return;
+    const c = ac();
+    if (!c) return;
+    const t = c.currentTime;
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(180, t);
+    o.frequency.exponentialRampToValueAtTime(90, t + 0.22);
+    g.gain.setValueAtTime(0.09, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+    o.connect(g).connect(c.destination);
+    o.start(t);
+    o.stop(t + 0.3);
+  }
+  const fanfare = () => [72, 76, 79, 84].forEach((m, i) => tone(m, 0.5, 0.2, i * 0.09));
+
+  // ---------- Staff rendering ----------
+  const GAP = 18, HALF = GAP / 2, BASE_Y = 150, NOTE_X = 225;
+  const yOf = (off) => BASE_Y - off * HALF;
+
+  function drawStaff(clef) {
+    let h = '';
+    for (let i = 0; i < 5; i++) {
+      const y = BASE_Y - i * GAP;
+      h += `<line class="staff-line" x1="8" x2="352" y1="${y}" y2="${y}"/>`;
+    }
+    h += `<line class="staff-line" x1="8" x2="8" y1="${BASE_Y - 4 * GAP}" y2="${BASE_Y}"/>`;
+    h += clef === 'treble'
+      ? `<text class="clef music" x="18" y="${BASE_Y + 3}" font-size="78">${CLEF.treble.glyph}</text>`
+      : `<text class="clef music" x="18" y="${BASE_Y - 10}" font-size="68">${CLEF.bass.glyph}</text>`;
+    $('staffG').innerHTML = h;
+  }
+
+  function drawNote(s, clef, status, label) {
+    const off = s - CLEF[clef].bottom;
+    const y = yOf(off);
+    const x = NOTE_X;
+    const color = status === 'good' ? 'var(--good)' : status === 'bad' ? 'var(--bad)' : 'var(--staff)';
+    let h = '';
+    for (let o = -2; o >= off; o -= 2) h += `<line class="staff-line" x1="${x - 20}" x2="${x + 20}" y1="${yOf(o)}" y2="${yOf(o)}"/>`;
+    for (let o = 10; o <= off; o += 2) h += `<line class="staff-line" x1="${x - 20}" x2="${x + 20}" y1="${yOf(o)}" y2="${yOf(o)}"/>`;
+    const up = off < 4;
+    h += up
+      ? `<line x1="${x + 10}" x2="${x + 10}" y1="${y - 2}" y2="${y - 62}" stroke="${color}" stroke-width="2.4"/>`
+      : `<line x1="${x - 10}" x2="${x - 10}" y1="${y + 2}" y2="${y + 62}" stroke="${color}" stroke-width="2.4"/>`;
+    h += `<ellipse cx="${x}" cy="${y}" rx="11" ry="8" transform="rotate(-22 ${x} ${y})" fill="${color}"/>`;
+    if (label) {
+      const li = liOf(s);
+      h += `<g transform="translate(${x + 30} ${y})">
+        <rect x="0" y="-15" rx="10" width="${label.length > 2 ? 62 : 46}" height="30" fill="${COLORS[li]}"/>
+        <text x="${label.length > 2 ? 31 : 23}" y="7" text-anchor="middle" font-family="'Baloo 2', sans-serif" font-weight="800" font-size="20" fill="${TEXT_ON[li]}">${label}</text>
+      </g>`;
+    }
+    const g = $('noteG');
+    g.innerHTML = h;
+    g.style.color = color;
+  }
+
+  // ---------- Answer buttons ----------
+  function buildAnswers() {
+    $('answers').innerHTML = LETTERS.map((_, li) =>
+      `<button type="button" class="ans" data-li="${li}" style="--c:${COLORS[li]};--t:${TEXT_ON[li]}" aria-label="${SOLF[li]} (${LETTERS[li]})">${nm(li)}<small>${alt(li)}</small></button>`
+    ).join('');
+  }
+  $('answers').addEventListener('click', (e) => {
+    const b = e.target.closest('.ans');
+    if (b) answer(+b.dataset.li);
+  });
+
+  // ---------- Piano ----------
+  const PIANO_LO = S(0, 2), PIANO_HI = S(2, 6); // C2 .. E6
+  const WK = 34;
+  function buildPiano() {
+    let h = '';
+    for (let s = PIANO_LO; s <= PIANO_HI; s++) {
+      const li = liOf(s);
+      const label = li === 0 ? `${settings.naming === 'solfege' ? 'Đô' : 'C'}${octOf(s)}` : '';
+      h += `<div class="wk${s === S(0, 4) ? ' mid' : ''}" data-s="${s}">${label}</div>`;
+    }
+    for (let s = PIANO_LO; s < PIANO_HI; s++) {
+      const li = liOf(s);
+      if (li === 2 || li === 6) continue;
+      const i = s - PIANO_LO;
+      h += `<div class="bk" data-m="${midiOf(s) + 1}" style="left:${(i + 1) * WK - 11}px"></div>`;
+    }
+    $('piano').innerHTML = h;
+  }
+  $('piano').addEventListener('pointerdown', (e) => {
+    const bk = e.target.closest('.bk');
+    if (bk) { tone(+bk.dataset.m); return; }
+    const wk = e.target.closest('.wk');
+    if (!wk) return;
+    const s = +wk.dataset.s;
+    if (g && g.running && !g.locked) answer(liOf(s));
+    else tone(midiOf(s));
+  });
+  function centerPianoOn(s, smooth = true) {
+    const sc = $('pianoScroll');
+    const left = (s - PIANO_LO) * WK + WK / 2 - sc.clientWidth / 2;
+    sc.scrollTo({ left, behavior: smooth && !reduceMotion ? 'smooth' : 'auto' });
+  }
+  function highlightKey(s, ok) {
+    clearKeys();
+    const k = $('piano').querySelector(`.wk[data-s="${s}"]`);
+    if (k) k.classList.add(ok ? 'hl-good' : 'hl-bad');
+    centerPianoOn(s);
+  }
+  const clearKeys = () => $('piano').querySelectorAll('.hl-good,.hl-bad').forEach((k) => k.classList.remove('hl-good', 'hl-bad'));
+
+  // ---------- Effects ----------
+  const cv = $('fx'), cx = cv.getContext('2d');
+  let parts = [], raf = 0;
+  function resizeFx() {
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = innerWidth * dpr;
+    cv.height = innerHeight * dpr;
+    cv.style.width = innerWidth + 'px';
+    cv.style.height = innerHeight + 'px';
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener('resize', resizeFx);
+  resizeFx();
+  function confetti(n = 90) {
+    if (reduceMotion) return;
+    for (let i = 0; i < n; i++) {
+      parts.push({
+        x: innerWidth / 2 + (Math.random() - 0.5) * 80, y: innerHeight * 0.35,
+        vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 11 - 4,
+        w: Math.random() * 6 + 5, h: Math.random() * 4 + 4, c: COLORS[i % 7],
+        a: Math.random() * 6, va: (Math.random() - 0.5) * 0.35, life: 0,
+      });
+    }
+    if (!raf) raf = requestAnimationFrame(loop);
+  }
+  function loop() {
+    cx.clearRect(0, 0, innerWidth, innerHeight);
+    for (const p of parts) {
+      p.vy += 0.32; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.a += p.va; p.life++;
+      cx.save(); cx.translate(p.x, p.y); cx.rotate(p.a); cx.fillStyle = p.c;
+      cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); cx.restore();
+    }
+    parts = parts.filter((p) => p.y < innerHeight + 30 && p.life < 260);
+    raf = parts.length ? requestAnimationFrame(loop) : 0;
+    if (!raf) cx.clearRect(0, 0, innerWidth, innerHeight);
+  }
+  function replayAnim(el, cls) {
+    el.classList.remove(cls);
+    void el.getBoundingClientRect();
+    el.classList.add(cls);
+  }
+  function floatText(text, minus) {
+    const f = document.createElement('div');
+    f.className = 'floater' + (minus ? ' minus' : '');
+    f.textContent = text;
+    $('stage').appendChild(f);
+    setTimeout(() => f.remove(), 950);
+  }
+  function toast(text) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = text;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 1700);
+  }
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const GOOD_MSG = ['Chuẩn luôn! 🎉', 'Tuyệt vời!', 'Mắt tinh quá! 👀', 'Đỉnh thật!', 'Mozart đây rồi! 🎼', 'Chính xác!', 'Ngon lành! 😎', 'Quá giỏi!', 'Pro rồi nha!'];
+  const BAD_MSG = ['Ối, suýt nữa thôi!', 'Không sao, thử tiếp nào 💪', 'Nhìn kỹ lại nhé!', 'Sai là để nhớ lâu hơn 😉', 'Hụt rồi, cố lên!'];
+  const STREAK_MSG = { 5: '5 câu liền! Nóng tay rồi 🔥', 10: '10 câu liền! Siêu đẳng 🚀', 15: '15 câu! Không thể cản nổi 😻', 20: '20 câu! Huyền thoại 👑' };
+  function say(face, msg, anim) {
+    const f = $('face');
+    f.textContent = face;
+    $('msg').textContent = msg;
+    if (anim) replayAnim(f, anim);
+  }
+
+  function mnemonic(s, clef) {
+    const c = CLEF[clef];
+    const off = s - c.bottom;
+    if (off >= 0 && off <= 8) {
+      return off % 2 === 0
+        ? `Mẹo: 5 dòng kẻ ${c.name} từ dưới lên là <b>${c.lines}</b>`
+        : `Mẹo: 4 khe ${c.name} từ dưới lên là <b>${c.spaces}</b>`;
+    }
+    if (s === S(0, 4)) return 'Mẹo: đây là <b>Đô giữa</b>, nốt nằm giữa hai khóa Sol và Fa';
+    return off < 0
+      ? 'Mẹo: nốt nằm dưới khuông. Từ dòng dưới cùng, đếm lùi từng bậc: dòng, khe, dòng...'
+      : 'Mẹo: nốt nằm trên khuông. Từ dòng trên cùng, đếm lên từng bậc: dòng, khe, dòng...';
+  }
+
+  // ---------- Game ----------
+  let g = null;
+  const levelFor = (correct) => 1 + Math.floor(correct / 8);
+  function diffNow() {
+    if (settings.diff !== 'auto') return settings.diff;
+    return g.level <= 2 ? 'easy' : g.level <= 4 ? 'medium' : 'hard';
+  }
+
+  function show(id) {
+    ['menu', 'game', 'end'].forEach((x) => $(x).classList.toggle('hidden', x !== id));
+    scrollTo({ top: 0 });
+  }
+
+  function start() {
+    ac();
+    g = {
+      mode: settings.mode, running: true, locked: false,
+      score: 0, streak: 0, bestStreak: 0, correct: 0, total: 0, level: 1,
+      lives: 3, timeLeft: 60, lastTick: performance.now(), timer: 0, pending: 0,
+      cur: null, missed: {}, missQueue: [],
+    };
+    buildAnswers();
+    buildPiano();
+    show('game');
+    $('timebar').classList.toggle('hidden', g.mode !== 'timed');
+    if (g.mode === 'timed') g.timer = setInterval(tick, 100);
+    say('🐱', 'Nốt này là gì nhỉ?');
+    updateHud();
+    requestAnimationFrame(() => centerPianoOn(S(0, 4), false));
+    next();
+  }
+
+  function tick() {
+    const now = performance.now();
+    g.timeLeft -= (now - g.lastTick) / 1000;
+    g.lastTick = now;
+    if (g.timeLeft <= 0) { g.timeLeft = 0; updateHud(); end(); return; }
+    updateHud();
+  }
+
+  function next() {
+    if (!g.running) return;
+    g.locked = false;
+    const clef = settings.clef === 'both' ? (Math.random() < 0.5 ? 'treble' : 'bass') : settings.clef;
+    const [lo, hi] = CLEF[clef].ranges[diffNow()];
+    let s = -1;
+    // Occasionally bring back a note the player got wrong, so they practise it.
+    const qi = g.missQueue.findIndex((m) => m.clef === clef && m.s >= lo && m.s <= hi);
+    if (qi >= 0 && Math.random() < 0.35 && !(g.cur && g.cur.s === g.missQueue[qi].s)) {
+      s = g.missQueue.splice(qi, 1)[0].s;
+    } else {
+      do { s = lo + Math.floor(Math.random() * (hi - lo + 1)); }
+      while (g.cur && s === g.cur.s && clef === g.cur.clef && hi > lo);
+    }
+    g.cur = { s, clef };
+    g.shownAt = performance.now();
+    drawStaff(clef);
+    drawNote(s, clef, 'idle');
+    replayAnim($('noteG'), 'enter');
+    document.querySelectorAll('.ans').forEach((b) => b.classList.remove('good', 'bad', 'reveal'));
+    clearKeys();
+    $('hint').innerHTML = '';
+    if (g.total > 0 && g.streak === 0) say('🐱', 'Thử nốt này nhé!');
+  }
+
+  function answer(li) {
+    if (!g || !g.running || g.locked) return;
+    g.locked = true;
+    g.total++;
+    const { s, clef } = g.cur;
+    const right = liOf(s);
+    const ok = li === right;
+    const btns = $('answers').children;
+    highlightKey(s, ok);
+    drawNote(s, clef, ok ? 'good' : 'bad', nm(right));
+
+    if (ok) {
+      tone(midiOf(s));
+      g.correct++;
+      g.streak++;
+      g.bestStreak = Math.max(g.bestStreak, g.streak);
+      const fast = (performance.now() - g.shownAt) / 1000 < 1.5;
+      const pts = 10 + Math.min(g.streak - 1, 10) * 2 + (fast ? 5 : 0);
+      g.score += pts;
+      floatText(`+${pts}${fast ? ' ⚡' : ''}`);
+      btns[li].classList.add('good');
+      if (STREAK_MSG[g.streak] || (g.streak > 20 && g.streak % 5 === 0)) {
+        say('😻', STREAK_MSG[g.streak] || `${g.streak} câu liền! Không ai cản nổi 👑`, 'happy');
+        confetti();
+        fanfare();
+      } else {
+        say(g.streak >= 5 ? '😸' : '🐱', pick(GOOD_MSG), 'happy');
+      }
+      const lv = levelFor(g.correct);
+      if (lv > g.level) {
+        g.level = lv;
+        setTimeout(() => { toast(`Lên cấp ${lv}! 🚀`); if (!STREAK_MSG[g.streak]) confetti(50); }, 150);
+      }
+      replayAnim($('hudScore'), 'bump');
+      g.pending = setTimeout(next, 650);
+    } else {
+      buzz();
+      tone(midiOf(s), 1.3, 0.32, 0.25);
+      g.streak = 0;
+      btns[li].classList.add('bad');
+      btns[right].classList.add('reveal');
+      const key = `${clef}:${s}`;
+      g.missed[key] = (g.missed[key] || 0) + 1;
+      g.missQueue.push({ s, clef });
+      say('🙀', `${pick(BAD_MSG)} Đó là ${nm(right)}.`, 'sad');
+      $('hint').innerHTML = mnemonic(s, clef);
+      replayAnim($('stage'), 'shake');
+      if (g.mode === 'survival') g.lives--;
+      if (g.mode === 'timed') { g.timeLeft = Math.max(0, g.timeLeft - 3); floatText('-3s', true); }
+      g.pending = setTimeout(() => {
+        if (g.mode === 'survival' && g.lives <= 0) end();
+        else next();
+      }, 1700);
+    }
+    updateHud();
+  }
+
+  function updateHud() {
+    $('hudScore').textContent = `⭐ ${g.score}`;
+    $('hudStreak').textContent = `${g.streak >= 5 ? '🔥' : '✨'} ${g.streak}`;
+    $('hudLevel').innerHTML = `<small>Cấp</small> ${g.level}`;
+    const ex = $('hudExtra');
+    if (g.mode === 'survival') ex.textContent = '❤️'.repeat(Math.max(0, g.lives)) + '🤍'.repeat(3 - Math.max(0, g.lives));
+    else if (g.mode === 'timed') ex.textContent = `⏱️ ${Math.ceil(g.timeLeft)}s`;
+    else ex.textContent = `🎯 ${g.correct}/${g.total}`;
+    if (g.mode === 'timed') {
+      $('timebar').firstElementChild.style.width = `${(g.timeLeft / 60) * 100}%`;
+      $('timebar').classList.toggle('low', g.timeLeft <= 10);
+    }
+  }
+
+  function end() {
+    if (!g || !g.running) return;
+    g.running = false;
+    clearInterval(g.timer);
+    clearTimeout(g.pending);
+    const acc = g.total ? Math.round((g.correct / g.total) * 100) : 0;
+    $('stScore').textContent = g.score;
+    $('stAcc').textContent = `${acc}%`;
+    $('stCorrect').textContent = `${g.correct}/${g.total}`;
+    $('stStreak').textContent = g.bestStreak;
+    const title = g.total === 0 ? 'Lần sau chơi thử nhé! 🐣'
+      : acc >= 90 ? 'Siêu sao âm nhạc! 🌟'
+      : acc >= 70 ? 'Giỏi lắm! 🎉'
+      : acc >= 40 ? 'Cố lên nào! 💪'
+      : 'Luyện thêm chút nữa nhé! 🐣';
+    $('endTitle').textContent = title;
+    $('endSub').textContent = `Chế độ ${MODE_NAME[g.mode]} · ${settings.clef === 'both' ? 'Cả hai khóa' : CLEF[settings.clef].name}`;
+
+    let record = false;
+    if (g.mode !== 'practice') {
+      const k = 'pn.best.' + g.mode;
+      if (g.score > store.get(k, 0)) { store.set(k, g.score); record = g.score > 0; }
+    }
+    $('record').classList.toggle('hidden', !record);
+
+    const missed = Object.entries(g.missed).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    $('missedBox').classList.toggle('hidden', missed.length === 0);
+    $('missedChips').innerHTML = missed.map(([k, n]) => {
+      const [clef, s] = [k.split(':')[0], +k.split(':')[1]];
+      const li = liOf(s);
+      return `<span class="chip" style="--c:${COLORS[li]};--t:${TEXT_ON[li]}">${nm(li)} ${LETTERS[li]}${octOf(s)} · ${CLEF[clef].name}${n > 1 ? ` ×${n}` : ''}</span>`;
+    }).join('');
+
+    show('end');
+    if (record || acc >= 90) { confetti(140); fanfare(); }
+    syncMenu();
+  }
+
+  // ---------- Wiring ----------
+  $('startBtn').addEventListener('click', start);
+  $('againBtn').addEventListener('click', start);
+  $('menuBtn').addEventListener('click', () => { syncMenu(); show('menu'); });
+  $('quitBtn').addEventListener('click', end);
+  $('soundBtn').addEventListener('click', () => { settings.sound = !settings.sound; saveSettings(); syncMenu(); });
+
+  addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key.toUpperCase();
+    if (g && g.running) {
+      if (k === 'ESCAPE') { end(); return; }
+      let li = LETTERS.indexOf(k);
+      if (li < 0 && k >= '1' && k <= '7') li = +k - 1;
+      if (li >= 0) { e.preventDefault(); answer(li); }
+    } else if (k === 'ENTER' && !$('menu').classList.contains('hidden')) {
+      e.preventDefault();
+      start();
+    }
+  });
+
+  syncMenu();
+})();
+</script>
+</body>
+</html>
