@@ -2,7 +2,12 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Đoán Nốt">
+<meta name="theme-color" content="#fff4e6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17131f" media="(prefers-color-scheme: dark)">
 <title>Đoán Nốt Nhạc</title>
 <meta name="description" content="Game vui giúp người học piano luyện đọc và đoán tên nốt nhạc trên khuông khóa Sol, khóa Fa.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎹</text></svg>">
@@ -72,10 +77,15 @@
     -webkit-tap-highlight-color: transparent;
   }
   .music { font-family: 'Noto Music', 'Segoe UI Symbol', 'Apple Symbols', serif; }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 16px 16px 40px; }
+  .wrap {
+    max-width: 760px; margin: 0 auto;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+             max(40px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
   .card { background: var(--card); border-radius: 24px; box-shadow: var(--shadow); padding: 18px; }
   .hidden { display: none !important; }
-  button { font: inherit; color: inherit; }
+  button { font: inherit; color: inherit; touch-action: manipulation; }
+  .ans, .piano, .icon-btn { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
   /* ---------- Menu ---------- */
   .logo { text-align: center; margin: 12px 0 18px; }
@@ -175,7 +185,7 @@
   .ans.reveal { animation: pulse .5s 3; box-shadow: 0 0 0 4px var(--good), 0 5px 0 rgba(0,0,0,.25); }
 
   /* ---------- Piano ---------- */
-  .piano-scroll { overflow-x: auto; margin-top: 16px; padding: 4px 0 8px; scrollbar-width: thin; }
+  .piano-scroll { overflow-x: auto; margin-top: 16px; padding: 4px 0 8px; scrollbar-width: thin; touch-action: pan-x; overscroll-behavior-x: contain; }
   .piano { position: relative; display: flex; width: max-content; margin: 0 auto; }
   .wk {
     width: 34px; height: 124px; background: #fff; border: 1px solid #cbc3dc; border-top: 0;
@@ -245,6 +255,74 @@
     .row .big-btn { font-size: 19px; padding: 12px 10px; white-space: nowrap; }
     .face { font-size: 32px; }
     .bubble { font-size: 16px; }
+  }
+
+  /* ---------- Tall phones in portrait (e.g. iPhone 17 Pro Max: 440×956): bigger touch targets ---------- */
+  @media (orientation: portrait) and (max-width: 480px) and (min-height: 800px) {
+    .wk { height: 170px; }
+    .wk.mid::before { top: 130px; }
+    .bk { height: 104px; }
+    .ans { padding: 14px 0 12px; }
+  }
+
+  /* ---------- Phone in landscape (e.g. iPhone 17 Pro Max: 956×440) ----------
+     Staff on the left, answer buttons on the right, full-width piano at the bottom,
+     so everything — including the piano keys — fits without vertical scrolling. */
+  @media (orientation: landscape) and (max-height: 540px) {
+    .wrap {
+      max-width: none;
+      padding-top: max(8px, env(safe-area-inset-top));
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+    #game {
+      display: grid;
+      /* Exactly one screen tall; the staff row absorbs whatever height is left. */
+      height: calc(100dvh - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-areas: "hud hud" "time time" "stage answers" "piano piano";
+      column-gap: 12px;
+    }
+    #game .hud { grid-area: hud; margin-bottom: 6px; flex-wrap: nowrap; }
+    #game .timebar { grid-area: time; margin: 0 0 6px; height: 8px; }
+    #game .stage { grid-area: stage; min-height: 0; padding: 6px 10px 2px; display: flex; flex-direction: column; }
+    #game .answers {
+      grid-area: answers; margin: 0; align-content: center;
+      grid-template-columns: repeat(4, 1fr); gap: 8px;
+    }
+    #game .ans { padding: 12px 0 10px; font-size: 22px; }
+    #game .piano-scroll { grid-area: piano; margin-top: 8px; padding-bottom: 2px; }
+    #game .piano-cap { display: none; }
+    .mascot { min-height: 0; gap: 8px; }
+    .face { font-size: 28px; }
+    .bubble { font-size: 15px; padding: 3px 12px; }
+    #staff { flex: 1 1 0; min-height: 0; max-height: none; }
+    .hint { font-size: 13px; min-height: 1.3em; margin: 0; }
+    .pill { font-size: 15px; padding: 3px 10px; }
+    .icon-btn { width: 34px; height: 34px; font-size: 15px; flex: none; }
+    .wk { height: 28vh; min-height: 92px; max-height: 124px; }
+    .wk.mid::before { top: auto; bottom: 26px; }
+    .bk { height: 18vh; min-height: 58px; max-height: 76px; }
+    .floater { top: 25%; }
+
+    /* Menu: two columns of options */
+    .logo { margin: 0 0 8px; }
+    .logo h1 { font-size: 30px; }
+    .logo p, .notes-deco, .footer-note { display: none; }
+    #menu .card { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; padding: 12px 16px; }
+    #menu .group { margin-bottom: 8px; }
+    #menu .big-btn, #menu .bests { grid-column: 1 / -1; }
+    #menu .big-btn { padding: 10px; font-size: 20px; }
+    #menu .bests { margin-top: 8px; }
+    .seg button { padding: 5px 8px; font-size: 15px; min-width: 60px; }
+    .mode-desc { font-size: 13px; }
+
+    /* End screen: stats in one row */
+    .stats { grid-template-columns: repeat(4, 1fr); }
+    .stat b { font-size: 24px; }
+    .end-title { font-size: 28px; }
+    .end-sub { margin-bottom: 8px; }
+    .row .big-btn { font-size: 19px; padding: 10px; }
   }
 </style>
 </head>
@@ -493,6 +571,22 @@
     $('staffG').innerHTML = h;
   }
 
+  // Crop the SVG to the clef glyph plus every note (with its stem) the current range can show,
+  // so easy ranges get a bigger staff instead of empty ledger-line room.
+  const CLEF_EXTENT = { treble: [44, 190], bass: [72, 156] };
+  function fitView(clef, lo, hi) {
+    let [top, bot] = CLEF_EXTENT[clef];
+    for (let s = lo; s <= hi; s++) {
+      const off = s - CLEF[clef].bottom;
+      const y = yOf(off);
+      top = Math.min(top, off < 4 ? y - 64 : y - 18);
+      bot = Math.max(bot, off < 4 ? y + 18 : y + 64);
+    }
+    top -= 6;
+    bot += 6;
+    $('staff').setAttribute('viewBox', `0 ${top} 360 ${bot - top}`);
+  }
+
   function drawNote(s, clef, status, label) {
     const off = s - CLEF[clef].bottom;
     const y = yOf(off);
@@ -547,7 +641,8 @@
     }
     $('piano').innerHTML = h;
   }
-  $('piano').addEventListener('pointerdown', (e) => {
+  // 'click' (not 'pointerdown') so that swiping to scroll the piano on a phone doesn't count as an answer.
+  $('piano').addEventListener('click', (e) => {
     const bk = e.target.closest('.bk');
     if (bk) { tone(+bk.dataset.m); return; }
     const wk = e.target.closest('.wk');
@@ -580,7 +675,11 @@
     cv.style.height = innerHeight + 'px';
     cx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  addEventListener('resize', resizeFx);
+  addEventListener('resize', () => {
+    resizeFx();
+    // After rotating the phone, keep the current note (or middle C) in view on the piano.
+    if (g && g.running) centerPianoOn(g.cur ? g.cur.s : S(0, 4), false);
+  });
   resizeFx();
   function confetti(n = 90) {
     if (reduceMotion) return;
@@ -705,6 +804,7 @@
     }
     g.cur = { s, clef };
     g.shownAt = performance.now();
+    fitView(clef, lo, hi);
     drawStaff(clef);
     drawNote(s, clef, 'idle');
     replayAnim($('noteG'), 'enter');
